@@ -3,7 +3,11 @@ let selectedRoleType = "root"; // 'root' | 'admin' | 'normal'
 let authToken = null;
 let currentSession = null;
 
+// Ensure default auth mode layout
+document.body.className = "auth-mode";
+
 // UI Elements
+const mainContainer = document.getElementById("mainContainer");
 const alertBox = document.getElementById("alertBox");
 const stepSubtitle = document.getElementById("stepSubtitle");
 
@@ -24,7 +28,7 @@ const loginPasswordInput = document.getElementById("loginPassword");
 const btnBackToStep1 = document.getElementById("btnBackToStep1");
 const btnLogin = document.getElementById("btnLogin");
 
-// Step 3
+// Step 3 (Admin)
 const step3 = document.getElementById("step3");
 const sessionUserSpan = document.getElementById("sessionUser");
 const sessionOrgSpan = document.getElementById("sessionOrg");
@@ -40,16 +44,20 @@ const newUserOrgInput = document.getElementById("newUserOrg");
 const newUserNameInput = document.getElementById("newUserName");
 const newUserPasswordInput = document.getElementById("newUserPassword");
 
-const normalUserSection = document.getElementById("normalUserSection");
-const chatMessages = document.getElementById("chatMessages");
-const chatForm = document.getElementById("chatForm");
-const chatPromptInput = document.getElementById("chatPromptInput");
-const btnSendPrompt = document.getElementById("btnSendPrompt");
-
 const uploadSection = document.getElementById("uploadSection");
 const uploadForm = document.getElementById("uploadForm");
 const uploadFileInput = document.getElementById("uploadFileInput");
 const btnUpload = document.getElementById("btnUpload");
+
+// Fullscreen Chatbot Elements (Normal User)
+const fullscreenChat = document.getElementById("fullscreenChat");
+const chatNavUser = document.getElementById("chatNavUser");
+const chatNavOrg = document.getElementById("chatNavOrg");
+const btnChatLogout = document.getElementById("btnChatLogout");
+const chatMessages = document.getElementById("chatMessages");
+const chatForm = document.getElementById("chatForm");
+const chatPromptInput = document.getElementById("chatPromptInput");
+const btnSendPrompt = document.getElementById("btnSendPrompt");
 
 function showAlert(message, type = "error") {
   alertBox.className = `alert ${type}`;
@@ -172,7 +180,6 @@ btnLogin.addEventListener("click", async () => {
       throw new Error("Failed to verify authenticated user profile");
     }
 
-    // Decode or identify session
     const isRootAdmin = (organisation === "root" && userName === "admin");
     let detectedRole = isRootAdmin ? "admin" : (selectedRoleType === "admin" ? "admin" : "user");
 
@@ -194,34 +201,43 @@ btnLogin.addEventListener("click", async () => {
 
 function renderStep3() {
   step2.classList.add("hidden");
-  step3.classList.remove("hidden");
-  stepSubtitle.textContent = "Dashboard";
 
-  sessionUserSpan.textContent = currentSession.userName;
-  sessionOrgSpan.textContent = currentSession.organisation;
-  sessionRoleSpan.textContent = currentSession.role;
+  if (currentSession.role === "user") {
+    // Normal User -> Fullscreen Chatbot View
+    document.body.className = "chat-mode";
+    mainContainer.classList.add("hidden");
+    fullscreenChat.classList.remove("hidden");
 
-  if (currentSession.isRootAdmin) {
-    createUserSection.classList.remove("hidden");
-    uploadSection.classList.add("hidden");
-    normalUserSection.classList.add("hidden");
-    createUserHeading.textContent = "Create Organisation Admin";
-    createUserSubtext.textContent = "As Root Admin, you can create new Admin users for any organisation.";
-    targetOrgGroup.classList.remove("hidden");
-    newUserOrgInput.required = true;
-  } else if (currentSession.role === "admin") {
-    createUserSection.classList.remove("hidden");
-    uploadSection.classList.remove("hidden");
-    normalUserSection.classList.add("hidden");
-    createUserHeading.textContent = `Create User for '${currentSession.organisation}'`;
-    createUserSubtext.textContent = `As ${currentSession.organisation} Admin, you can create standard users within your organisation.`;
-    targetOrgGroup.classList.add("hidden");
-    newUserOrgInput.required = false;
+    chatNavUser.textContent = currentSession.userName;
+    chatNavOrg.textContent = currentSession.organisation;
   } else {
-    // Normal User view
-    createUserSection.classList.add("hidden");
-    uploadSection.classList.add("hidden");
-    normalUserSection.classList.remove("hidden");
+    // Admin View (Root Admin or Org Admin)
+    document.body.className = "auth-mode";
+    mainContainer.classList.remove("hidden");
+    step3.classList.remove("hidden");
+    fullscreenChat.classList.add("hidden");
+    stepSubtitle.textContent = "Dashboard";
+
+    sessionUserSpan.textContent = currentSession.userName;
+    sessionOrgSpan.textContent = currentSession.organisation;
+    sessionRoleSpan.textContent = currentSession.role;
+
+    if (currentSession.isRootAdmin) {
+      createUserSection.classList.remove("hidden");
+      uploadSection.classList.add("hidden");
+      createUserHeading.textContent = "Create Organisation Admin";
+      createUserSubtext.textContent = "As Root Admin, you can create new Admin users for any organisation.";
+      targetOrgGroup.classList.remove("hidden");
+      newUserOrgInput.required = true;
+    } else {
+      // Org Admin
+      createUserSection.classList.remove("hidden");
+      uploadSection.classList.remove("hidden");
+      createUserHeading.textContent = `Create User for '${currentSession.organisation}'`;
+      createUserSubtext.textContent = `As ${currentSession.organisation} Admin, you can create standard users within your organisation.`;
+      targetOrgGroup.classList.add("hidden");
+      newUserOrgInput.required = false;
+    }
   }
 }
 
@@ -315,10 +331,9 @@ uploadForm.addEventListener("submit", async (e) => {
   }
 });
 
-// Chatbot Prompt Handling (Normal User)
+// Fullscreen Chatbot Prompt Handling
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  clearAlert();
 
   const prompt = chatPromptInput.value.trim();
   if (!prompt) return;
@@ -326,15 +341,18 @@ chatForm.addEventListener("submit", async (e) => {
   // Append user bubble
   const userBubble = document.createElement("div");
   userBubble.className = "chat-bubble user";
-  userBubble.innerHTML = `<div class="bubble-header">You</div><div>${escapeHtml(prompt)}</div>`;
+  userBubble.innerHTML = `<div class="response-text">${escapeHtml(prompt)}</div>`;
   chatMessages.appendChild(userBubble);
   chatPromptInput.value = "";
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
-  // Append temporary loading bot bubble
+  // Append bot loading bubble
   const botBubble = document.createElement("div");
   botBubble.className = "chat-bubble bot";
-  botBubble.innerHTML = `<div class="bubble-header">Backend (/app)</div><div>Querying backend...</div>`;
+  botBubble.innerHTML = `
+    <div class="bubble-header">Assistant</div>
+    <div class="response-text" style="color: #64748b;">Thinking...</div>
+  `;
   chatMessages.appendChild(botBubble);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -356,14 +374,20 @@ chatForm.addEventListener("submit", async (e) => {
     }
 
     const prettyJson = JSON.stringify(data, null, 2);
+    const responseText = data.response || "No response received.";
+
     botBubble.innerHTML = `
-      <div class="bubble-header">Backend (/app) Response</div>
-      <pre class="json-preview"><code>${escapeHtml(prettyJson)}</code></pre>
+      <div class="bubble-header">Assistant</div>
+      <details class="collapsible-json">
+        <summary>&#x1F4CB; View JSON Response / Citations</summary>
+        <pre class="json-preview"><code>${escapeHtml(prettyJson)}</code></pre>
+      </details>
+      <div class="response-text">${escapeHtml(responseText)}</div>
     `;
   } catch (err) {
     botBubble.innerHTML = `
       <div class="bubble-header">Error</div>
-      <div style="color: #ef4444;">${escapeHtml(err.message)}</div>
+      <div class="response-text" style="color: #ef4444;">${escapeHtml(err.message)}</div>
     `;
   } finally {
     btnSendPrompt.disabled = false;
@@ -377,13 +401,20 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Sign Out
-btnLogout.addEventListener("click", () => {
+// Sign Out Handlers
+function signOut() {
   authToken = null;
   currentSession = null;
   loginPasswordInput.value = "";
   clearAlert();
+
+  document.body.className = "auth-mode";
+  fullscreenChat.classList.add("hidden");
   step3.classList.add("hidden");
+  mainContainer.classList.remove("hidden");
   step2.classList.remove("hidden");
   stepSubtitle.textContent = "Step 2: Sign In";
-});
+}
+
+btnLogout.addEventListener("click", signOut);
+btnChatLogout.addEventListener("click", signOut);

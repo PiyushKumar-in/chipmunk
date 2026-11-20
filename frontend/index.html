@@ -7,9 +7,10 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <header>
+  <!-- Standard Centered Container for Step 1, Step 2, and Admin Panels -->
+  <div id="mainContainer" class="container">
+    <div id="mainCard" class="card">
+      <header id="mainHeader">
         <h1>User Management Portal</h1>
         <p id="stepSubtitle">Step 1: Backend Configuration</p>
       </header>
@@ -58,7 +59,7 @@
         </div>
       </section>
 
-      <!-- Step 3: Logged In Dashboard -->
+      <!-- Step 3: Admin Dashboard (Root & Org Admin) -->
       <section id="step3" class="step hidden">
         <div class="session-badge">
           <div>
@@ -111,25 +112,41 @@
             </div>
           </form>
         </div>
-
-        <!-- Normal User Chatbot Panel (Visible only to Normal User) -->
-        <div id="normalUserSection" class="hidden">
-          <div class="chat-wrapper">
-            <div id="chatMessages" class="chat-messages">
-              <div class="chat-bubble bot">
-                <div class="bubble-header">System</div>
-                <div class="bubble-body">Hello! Ask anything about your organisation's documents. The response JSON will be displayed below.</div>
-              </div>
-            </div>
-
-            <form id="chatForm" class="chat-input-form">
-              <textarea id="chatPromptInput" rows="2" placeholder="Type your prompt here..." required></textarea>
-              <button type="submit" id="btnSendPrompt" class="btn primary">Send</button>
-            </form>
-          </div>
-        </div>
       </section>
     </div>
+  </div>
+
+  <!-- Fullscreen Chatbot View (For Normal User) -->
+  <div id="fullscreenChat" class="fullscreen-chat hidden">
+    <header class="chat-navbar">
+      <div class="chat-nav-title">
+        <span class="chat-logo">&#x1F916;</span>
+        <span>Organisation Assistant</span>
+      </div>
+      <div class="chat-nav-meta">
+        <span>User: <strong id="chatNavUser"></strong></span>
+        <span>Org: <strong id="chatNavOrg"></strong></span>
+        <button id="btnChatLogout" class="btn small danger" type="button">Sign Out</button>
+      </div>
+    </header>
+
+    <main class="chat-main">
+      <div id="chatMessages" class="chat-messages">
+        <div class="chat-bubble bot">
+          <div class="bubble-header">Assistant</div>
+          <div class="response-text">Hello! How can I assist you with your organisation's documents today?</div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="chat-footer">
+      <div class="chat-input-container">
+        <form id="chatForm" class="chat-input-form">
+          <textarea id="chatPromptInput" rows="1" placeholder="Send a message..." required></textarea>
+          <button type="submit" id="btnSendPrompt" class="btn primary send-btn">&#x27A4;</button>
+        </form>
+      </div>
+    </footer>
   </div>
 
   <script src="app.js"></script>

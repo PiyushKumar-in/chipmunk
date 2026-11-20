@@ -7,11 +7,11 @@ from pydantic import BaseModel
 try:
     from backend.auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
     from backend.processing import processFileAsync
-    from backend.rag import querySections
+    from backend.rag import executeRag
 except ModuleNotFoundError:
     from auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
     from processing import processFileAsync
-    from rag import querySections
+    from rag import executeRag
 
 
 app = FastAPI()
@@ -121,8 +121,7 @@ def appEndpoint(
     appData: AppRequest,
     currentUser: Annotated[User, Depends(getCurrentUser)],
 ):
-    citations = querySections(appData.prompt, currentUser.organisation)
-    return {"citations": citations}
+    return executeRag(appData.prompt, currentUser.organisation)
 
 
 if __name__ == "__main__":
