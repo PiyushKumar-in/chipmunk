@@ -6,8 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 try:
     from backend.auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
+    from backend.processing import processFileAsync
 except ModuleNotFoundError:
     from auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
+    from processing import processFileAsync
 
 
 app = FastAPI()
@@ -98,6 +100,8 @@ def uploadFile(
     with open(destPath, "wb") as f:
         while chunk := file.file.read(1024 * 1024):
             f.write(chunk)
+
+    processFileAsync(destPath, currentUser.organisation)
 
     return {
         "message": f"File '{fileName}' uploaded successfully for organisation '{currentUser.organisation}'",
