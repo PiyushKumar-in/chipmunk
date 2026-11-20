@@ -15,7 +15,7 @@ TESTS_DIR = BASE_DIR / "tests"
 PDF_V1_DIR = TESTS_DIR / "data" / "pdf" / "v1"
 PDF_V2_DIR = TESTS_DIR / "data" / "pdf" / "v2"
 PERF_DIR = TESTS_DIR / "tests" / "performance"
-OUTPUT_DIR = TESTS_DIR / "results"
+RESULTS_ROOT = TESTS_DIR / "results"
 
 CONTAINER_NAME = "chipmunk-backend-eval"
 BACKEND_URL = "http://127.0.0.1:8000"
@@ -96,21 +96,21 @@ def uploadFile(token: str, filePath: Path):
     r.raise_for_status()
 
 
-def warmup(token: str):
-    print("Running warmup query to force loading of LLM weights to GPU...")
+def warmup(token: str, useHyde: bool = False):
+    print(f"Running warmup query (useHyde={useHyde}) to force loading of LLM weights to GPU...")
     try:
         t0 = time.time()
         requests.post(f"{BACKEND_URL}/app",
                       headers={"Authorization": f"Bearer {token}"},
-                      json={"prompt": "Warmup question: Are transport facilities provided?", "useHyde": False},
+                      json={"prompt": "Warmup question: Are transport facilities provided?", "useHyde": useHyde},
                       timeout=120)
         print(f"Warmup completed in {round(time.time() - t0, 2)}s.")
     except Exception as e:
         print(f"Warmup notice: {e}")
 
 
-def runEvaluation(token: str, testJsonl: Path, outputFile: Path, limit: int | None = None) -> list[dict]:
-    print(f"Evaluating {testJsonl.name} -> {outputFile.name}...")
+def runEvaluation(token: str, testJsonl: Path, outputFile: Path, useHyde: bool = False, limit: int | None = None) -> list[dict]:
+    print(f"Evaluating {testJsonl.name} -> {outputFile.name} (useHyde={useHyde})...")
     records = []
     with open(testJsonl, "r", encoding="utf-8") as f:
         for line in f:
@@ -127,10 +127,11 @@ def runEvaluation(token: str, testJsonl: Path, outputFile: Path, limit: int | No
             expected = item.get("expected_answer") or item.get("expected")
 
             t0 = time.time()
+            respData = {}
             try:
                 r = requests.post(f"{BACKEND_URL}/app",
                                   headers={"Authorization": f"Bearer {token}"},
-                                  json={"prompt": question, "useHyde": False},
+                                  json={"prompt": question, "useHyde": useHyde},
                                   timeout=120)
                 r.raise_for_status()
                 respData = r.json()
@@ -145,6 +146,7 @@ def runEvaluation(token: str, testJsonl: Path, outputFile: Path, limit: int | No
                 "expected": expected,
                 "actual": modelAnswer,
                 "totalTime": totalTime,
+                "timeMetrics": respData.get("timeMetrics", {}),
             }
             results.append(entry)
             outF.write(json.dumps(entry) + "\n")
@@ -196,16 +198,16 @@ def evaluateResultsFile(resultJsonl: Path, rougeScorerInstance=None, bertScorerI
     return metrics
 
 
-def computeAllMetrics():
+def computeAllMetrics(targetDir: Path):
     allResultFiles = {
-        "aethertech_v1": OUTPUT_DIR / "aethertech_v1_results.jsonl",
-        "nexacore_v1": OUTPUT_DIR / "nexacore_v1_results.jsonl",
-        "vanguard_v1": OUTPUT_DIR / "vanguard_v1_results.jsonl",
-        "aethertech_v2": OUTPUT_DIR / "aethertech_v2_results.jsonl",
+        "aethertech_v1": targetDir / "aethertech_v1_results.jsonl",
+        "nexacore_v1": targetDir / "nexacore_v1_results.jsonl",
+        "vanguard_v1": targetDir / "vanguard_v1_results.jsonl",
+        "aethertech_v2": targetDir / "aethertech_v2_results.jsonl",
     }
 
     print("\n" + "=" * 50)
-    print("Computing ROUGE and BERTScore metrics (including p95)...")
+    print(f"Computing ROUGE, BERTScore, and p95 metrics for {targetDir}...")
     print("=" * 50)
 
     rougeScorerInstance = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
@@ -221,7 +223,7 @@ def computeAllMetrics():
         print(f"Results for {suiteName}:")
         print(json.dumps(metrics, indent=2))
 
-    summaryPath = OUTPUT_DIR / "evaluation_summary.json"
+    summaryPath = targetDir / "evaluation_summary.json"
     with open(summaryPath, "w", encoding="utf-8") as f:
         json.dump(allSummary, f, indent=2)
 
@@ -235,14 +237,17 @@ def computeAllMetrics():
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate backend performance")
+    parser.add_argument("--use-hyde", "--hyde", action="store_true", help="Enable HyDE pseudo-answer generation in RAG")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of queries per test")
     parser.add_argument("--score-only", action="store_true", help="Only compute metrics from existing result files")
     args = parser.parse_args()
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    mode = "hyde" if args.use_hyde else "baseline"
+    targetDir = RESULTS_ROOT / mode
+    targetDir.mkdir(parents=True, exist_ok=True)
 
     if args.score_only:
-        computeAllMetrics()
+        computeAllMetrics(targetDir)
         return
 
     try:
@@ -259,7 +264,7 @@ def main():
             "vanguard": PDF_V1_DIR / "vanguard_policy.pdf",
         }
 
-        print("\n[3] Creating organisations, admin users, and uploading v1 policies...")
+        print(f"\n[3] Creating organisations, admin users, and uploading v1 policies ({mode})...")
         for org, pdfPath in orgConfigs.items():
             adminUser = f"{org}_admin"
             adminPass = "pw123"
@@ -278,20 +283,20 @@ def main():
         time.sleep(3)
 
         # Step 3: Warmup run
-        warmup(warmupToken)
+        warmup(warmupToken, useHyde=args.use_hyde)
 
         # Step 4: Login as different users and run respective performance tests
         testSuites = [
-            ("aethertech_v1", "aethertech", PERF_DIR / "aethertech_v1_eval.jsonl", OUTPUT_DIR / "aethertech_v1_results.jsonl"),
-            ("nexacore_v1", "nexacore", PERF_DIR / "nexacore_v1_eval.jsonl", OUTPUT_DIR / "nexacore_v1_results.jsonl"),
-            ("vanguard_v1", "vanguard", PERF_DIR / "vanguard_v1_eval.jsonl", OUTPUT_DIR / "vanguard_v1_results.jsonl"),
+            ("aethertech_v1", "aethertech", PERF_DIR / "aethertech_v1_eval.jsonl", targetDir / "aethertech_v1_results.jsonl"),
+            ("nexacore_v1", "nexacore", PERF_DIR / "nexacore_v1_eval.jsonl", targetDir / "nexacore_v1_results.jsonl"),
+            ("vanguard_v1", "vanguard", PERF_DIR / "vanguard_v1_eval.jsonl", targetDir / "vanguard_v1_results.jsonl"),
         ]
 
-        print("\n[4] Running evaluation tests for v1 organisations...")
+        print(f"\n[4] Running evaluation tests for v1 organisations ({mode})...")
         for suiteName, org, testFile, outFile in testSuites:
-            print(f"\n--- Running evaluation for {suiteName} ({org}) ---")
+            print(f"\n--- Running evaluation for {suiteName} ({org}, useHyde={args.use_hyde}) ---")
             userToken = login(org, f"{org}_admin", "pw123")
-            runEvaluation(userToken, testFile, outFile, limit=args.limit)
+            runEvaluation(userToken, testFile, outFile, useHyde=args.use_hyde, limit=args.limit)
 
         # Step 5: Update aethertech policy to v2, warmup on other user, and run v2 test
         print("\n[5] Updating aethertech policy to v2...")
@@ -300,19 +305,19 @@ def main():
         print("Waiting 3s for background vector indexing...")
         time.sleep(3)
 
-        print("\nRunning warmup run on warmup user...")
-        warmup(warmupToken)
+        print(f"\nRunning warmup run on warmup user (useHyde={args.use_hyde})...")
+        warmup(warmupToken, useHyde=args.use_hyde)
 
         v2TestFile = TESTS_DIR / "tests" / "aethertech_v2_comparison_eval.jsonl"
         if not v2TestFile.exists():
             v2TestFile = PERF_DIR / "aethertech_v1_eval.jsonl"
 
-        print(f"\n--- Running evaluation for aethertech (v2) with {v2TestFile.name} ---")
-        outV2File = OUTPUT_DIR / "aethertech_v2_results.jsonl"
-        runEvaluation(aethertechToken, v2TestFile, outV2File, limit=args.limit)
+        print(f"\n--- Running evaluation for aethertech (v2) with {v2TestFile.name} (useHyde={args.use_hyde}) ---")
+        outV2File = targetDir / "aethertech_v2_results.jsonl"
+        runEvaluation(aethertechToken, v2TestFile, outV2File, useHyde=args.use_hyde, limit=args.limit)
 
         # Step 6: Post-pipeline scoring (compare all model outputs with ground truth)
-        computeAllMetrics()
+        computeAllMetrics(targetDir)
 
     finally:
         stopContainer()
