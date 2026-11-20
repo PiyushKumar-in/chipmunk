@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management Portal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <header>
+        <h1>User Management Portal</h1>
+        <p id="stepSubtitle">Step 1: Backend Configuration</p>
+      </header>
+
+      <div id="alertBox" class="alert hidden"></div>
+
+      <!-- Step 1: Backend IP / URL -->
+      <section id="step1" class="step">
+        <label for="backendUrl">Backend Server Address / URL</label>
+        <div class="input-row">
+          <input type="text" id="backendUrl" placeholder="http://localhost:8000" value="http://localhost:8000" />
+        </div>
+        <p class="hint">Enter backend host and port (e.g. <code>http://localhost:8000</code> or <code>http://192.168.1.10:8000</code>)</p>
+        <button id="btnConnect" class="btn primary">Connect &amp; Continue &rarr;</button>
+      </section>
+
+      <!-- Step 2: Sign In (Tabs: Root, Admin, Normal User) -->
+      <section id="step2" class="step hidden">
+        <p class="question">Select Sign In Role</p>
+        <div class="toggle-group">
+          <button id="tabRoot" class="btn choice-btn active" type="button">Root</button>
+          <button id="tabAdmin" class="btn choice-btn" type="button">Admin</button>
+          <button id="tabNormal" class="btn choice-btn" type="button">Normal User</button>
+        </div>
+
+        <div class="form-container">
+          <div id="orgInputGroup" class="form-group hidden">
+            <label for="loginOrg">Organisation Name</label>
+            <input type="text" id="loginOrg" placeholder="e.g. aethertech" />
+          </div>
+
+          <div class="form-group">
+            <label for="loginUsername">Username</label>
+            <input type="text" id="loginUsername" placeholder="e.g. admin" value="admin" />
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter password" />
+          </div>
+
+          <div class="actions">
+            <button id="btnBackToStep1" class="btn secondary" type="button">&larr; Back</button>
+            <button id="btnLogin" class="btn primary" type="button">Sign In &rarr;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: Logged In Dashboard -->
+      <section id="step3" class="step hidden">
+        <div class="session-badge">
+          <div>
+            <div>User: <strong id="sessionUser"></strong></div>
+            <div>Org: <strong id="sessionOrg"></strong> | Role: <strong id="sessionRole"></strong></div>
+          </div>
+          <button id="btnLogout" class="btn small danger" type="button">Sign Out</button>
+        </div>
+
+        <!-- File Upload Section (Visible only to Non-Root Org Admins) -->
+        <div id="uploadSection" class="hidden">
+          <h2>Upload Organisation Document</h2>
+          <p class="subtext">Upload files to your organisation's storage.</p>
+          <form id="uploadForm" class="form-container">
+            <div class="form-group">
+              <label for="uploadFileInput">Choose File</label>
+              <input type="file" id="uploadFileInput" required />
+            </div>
+            <div class="actions">
+              <button type="submit" id="btnUpload" class="btn primary">Upload File</button>
+            </div>
+          </form>
+          <hr class="divider" />
+        </div>
+
+        <!-- Create User Panel (Visible only to Root & Org Admin) -->
+        <div id="createUserSection">
+          <h2 id="createUserHeading">Create New User</h2>
+          <p id="createUserSubtext" class="subtext"></p>
+
+          <form id="createUserForm" class="form-container">
+            <div id="targetOrgGroup" class="form-group">
+              <label for="newUserOrg">Target Organisation Name</label>
+              <input type="text" id="newUserOrg" placeholder="e.g. aethertech" />
+              <small class="hint">Root admin will create an Organisation Admin for this org.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="newUserName">New Username</label>
+              <input type="text" id="newUserName" placeholder="e.g. john_doe" required />
+            </div>
+
+            <div class="form-group">
+              <label for="newUserPassword">New User Password</label>
+              <input type="password" id="newUserPassword" placeholder="Password" required />
+            </div>
+
+            <div class="actions">
+              <button type="submit" id="btnCreateUser" class="btn primary">Create User</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Normal User Welcome Panel (Visible only to Normal User) -->
+        <div id="normalUserSection" class="hidden">
+          <div class="welcome-box">
+            <h2>Welcome!</h2>
+            <p id="welcomeMessage" class="subtext"></p>
+            <p class="hint">Standard users do not have permissions to create users.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

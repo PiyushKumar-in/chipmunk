@@ -1,15 +1,24 @@
+from pathlib import Path
 import sqlite3
 from typing import Annotated
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 try:
-    from backend.auth import DB_PATH, LoginRequest, User, createToken, getCurrentUser
+    from backend.auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
 except ModuleNotFoundError:
-    from auth import DB_PATH, LoginRequest, User, createToken, getCurrentUser
-
+    from auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class CreateUserRequest(BaseModel):
     userName: str
@@ -27,28 +36,30 @@ def createUser(userData: CreateUserRequest, currentUser: Annotated[User, Depends
     if currentUser.organisation == "root" and currentUser.userName == "admin":
         if not userData.organisation:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Organisation is required")
-        target_org = userData.organisation
-        target_role = "admin"
+        targetOrg = userData.organisation
+        targetRole = "admin"
     elif currentUser.role == "admin":
-        target_org = currentUser.organisation
-        target_role = "user"
+        targetOrg = currentUser.organisation
+        targetRole = "user"
     else:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
-        with sqlite3.connect(DB_PATH, timeout=10) as conn:
+        with sqlite3.connect(dbPath, timeout=10) as conn:
             conn.execute(
                 "INSERT INTO users (organisation, userName, password, role) VALUES (?, ?, ?, ?)",
-                (target_org, userData.userName, userData.password, target_role),
+                (targetOrg, userData.userName, userData.password, targetRole),
             )
-        return {"message": f"{target_role.capitalize()} user '{userData.userName}' created for organisation '{target_org}'"}
+        if targetRole == "admin" and targetOrg != "root":
+            (databaseDir / targetOrg).mkdir(parents=True, exist_ok=True)
+        return {"message": f"{targetRole.capitalize()} user '{userData.userName}' created for organisation '{targetOrg}'"}
     except sqlite3.IntegrityError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="User already exists")
 
 
 @app.post("/login")
 def login(loginData: LoginRequest):
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
+    with sqlite3.connect(dbPath, timeout=10) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT password FROM users WHERE organisation = ? AND userName = ?",
@@ -65,6 +76,34 @@ def login(loginData: LoginRequest):
 @app.get("/protected")
 def protectedRoute(currentUser: Annotated[User, Depends(getCurrentUser)]):
     return {"message": f"Hello, {currentUser.userName}! Organisation: {currentUser.organisation}, Role: {currentUser.role}"}
+
+
+@app.post("/upload")
+def uploadFile(
+    file: UploadFile,
+    currentUser: Annotated[User, Depends(getCurrentUser)],
+):
+    if currentUser.organisation == "root" or currentUser.role != "admin":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail="Only organisation admins (non-root) can upload files",
+        )
+
+    orgDir = databaseDir / currentUser.organisation
+    orgDir.mkdir(parents=True, exist_ok=True)
+
+    fileName = Path(file.filename or "upload.bin").name
+    destPath = orgDir / fileName
+
+    with open(destPath, "wb") as f:
+        while chunk := file.file.read(1024 * 1024):
+            f.write(chunk)
+
+    return {
+        "message": f"File '{fileName}' uploaded successfully for organisation '{currentUser.organisation}'",
+        "fileName": fileName,
+        "organisation": currentUser.organisation,
+    }
 
 
 if __name__ == "__main__":

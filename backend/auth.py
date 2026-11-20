@@ -10,15 +10,16 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-SECRET_KEY = os.getenv("SECRET_KEY", uuid4().hex)
-ALGORITHM = "HS256"
-DB_PATH = str(Path(__file__).parent.parent / "database" / "app.db")
+secretKey = os.getenv("SECRET_KEY", uuid4().hex)
+algorithm = "HS256"
+databaseDir = Path(__file__).parent.parent / "database"
+dbPath = str(databaseDir / "app.db")
 
 security = HTTPBearer()
 
 
 def initDb():
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(dbPath) as conn:
         cursor = conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL;")
         cursor.execute("""
@@ -56,12 +57,12 @@ class LoginRequest(BaseModel):
 
 def createToken(userName: str, organisation: str) -> str:
     expireTime = datetime.now(timezone.utc) + timedelta(hours=1)
-    return jwt.encode({"sub": userName, "org": organisation, "exp": expireTime}, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({"sub": userName, "org": organisation, "exp": expireTime}, secretKey, algorithm=algorithm)
 
 
 def getCurrentUser(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]) -> User:
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(credentials.credentials, secretKey, algorithms=[algorithm])
         userName: str | None = payload.get("sub")
         organisation: str | None = payload.get("org")
         if not userName or not organisation:
@@ -69,7 +70,7 @@ def getCurrentUser(credentials: Annotated[HTTPAuthorizationCredentials, Depends(
     except jwt.PyJWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
-    with sqlite3.connect(DB_PATH, timeout=10) as conn:
+    with sqlite3.connect(dbPath, timeout=10) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT role FROM users WHERE organisation = ? AND userName = ?",
