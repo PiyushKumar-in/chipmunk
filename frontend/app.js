@@ -54,6 +54,7 @@ const fullscreenChat = document.getElementById("fullscreenChat");
 const chatNavUser = document.getElementById("chatNavUser");
 const chatNavOrg = document.getElementById("chatNavOrg");
 const btnChatLogout = document.getElementById("btnChatLogout");
+const toggleHyde = document.getElementById("toggleHyde");
 const chatMessages = document.getElementById("chatMessages");
 const chatForm = document.getElementById("chatForm");
 const chatPromptInput = document.getElementById("chatPromptInput");
@@ -275,6 +276,10 @@ createUserForm.addEventListener("submit", async (e) => {
 
     const data = await res.json();
     if (!res.ok) {
+      if (isUnauthorized(res.status, data.detail)) {
+        signOut("Session expired or invalid token. Please sign in again.");
+        return;
+      }
       throw new Error(data.detail || "Failed to create user");
     }
 
@@ -318,6 +323,10 @@ uploadForm.addEventListener("submit", async (e) => {
 
     const data = await res.json();
     if (!res.ok) {
+      if (isUnauthorized(res.status, data.detail)) {
+        signOut("Session expired or invalid token. Please sign in again.");
+        return;
+      }
       throw new Error(data.detail || "Upload failed");
     }
 
@@ -359,22 +368,30 @@ chatForm.addEventListener("submit", async (e) => {
   btnSendPrompt.disabled = true;
 
   try {
+    const useHyde = toggleHyde ? toggleHyde.checked : false;
     const res = await fetch(`${backendBaseUrl}/app`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, useHyde }),
     });
 
     const data = await res.json();
     if (!res.ok) {
+      if (isUnauthorized(res.status, data.detail)) {
+        signOut("Session expired or invalid token. Please sign in again.");
+        return;
+      }
       throw new Error(data.detail || "Request to /app failed");
     }
 
     const prettyJson = JSON.stringify(data, null, 2);
     const responseText = data.response || "No response received.";
+    const metrics = data.timeMetrics || {};
+
+    const prettyTimeMetrics = JSON.stringify(metrics, null, 2);
 
     botBubble.innerHTML = `
       <div class="bubble-header">Assistant</div>
@@ -383,6 +400,16 @@ chatForm.addEventListener("submit", async (e) => {
         <pre class="json-preview"><code>${escapeHtml(prettyJson)}</code></pre>
       </details>
       <div class="response-text">${escapeHtml(responseText)}</div>
+      <details class="collapsible-json collapsible-metrics">
+        <summary>&#x23F1;&#xFE0F; Time Taken: ${metrics.totalTime != null ? metrics.totalTime + 's' : 'Details'}</summary>
+        <div class="metrics-content">
+          <div class="metric-row"><span>Pseudo Answer Generation:</span><strong>${metrics.pseudoAnswerTime != null ? metrics.pseudoAnswerTime + 's' : '-'}</strong></div>
+          <div class="metric-row"><span>Vector Querying:</span><strong>${metrics.queryingTime != null ? metrics.queryingTime + 's' : '-'}</strong></div>
+          <div class="metric-row"><span>Main Answer Generation:</span><strong>${metrics.mainAnswerTime != null ? metrics.mainAnswerTime + 's' : '-'}</strong></div>
+          <div class="metric-row total"><span>Total Time:</span><strong>${metrics.totalTime != null ? metrics.totalTime + 's' : '-'}</strong></div>
+          <pre class="json-preview"><code>${escapeHtml(prettyTimeMetrics)}</code></pre>
+        </div>
+      </details>
     `;
   } catch (err) {
     botBubble.innerHTML = `
@@ -401,8 +428,16 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function isUnauthorized(status, message) {
+  return (
+    status === 401 ||
+    status === 403 ||
+    (typeof message === "string" && message.toLowerCase().includes("invalid"))
+  );
+}
+
 // Sign Out Handlers
-function signOut() {
+function signOut(reasonMessage) {
   authToken = null;
   currentSession = null;
   loginPasswordInput.value = "";
@@ -414,6 +449,10 @@ function signOut() {
   mainContainer.classList.remove("hidden");
   step2.classList.remove("hidden");
   stepSubtitle.textContent = "Step 2: Sign In";
+
+  if (reasonMessage) {
+    showAlert(reasonMessage, "error");
+  }
 }
 
 btnLogout.addEventListener("click", signOut);

@@ -42,7 +42,32 @@ def processFile(filePath: str | Path, organisation: str):
     print(f"Processed and indexed {len(documents)} chunks from '{fileName}' for '{organisation}'")
 
 
-def processFileAsync(filePath: str | Path, organisation: str):
-    thread = threading.Thread(target=processFile, args=(filePath, organisation), daemon=True)
+def deleteFileChunks(fileName: str, organisation: str):
+    try:
+        collection = chromaClient.get_collection(
+            name=organisation,
+            embedding_function=embeddingFunction,
+        )
+        collection.delete(where={"fileName": fileName})
+        print(f"Removed previous chunks for '{fileName}' in '{organisation}'")
+    except Exception as e:
+        print(f"Error removing chunks for '{fileName}' in '{organisation}': {e}")
+
+
+def handleFileUpload(tmpPath: Path, destPath: Path, organisation: str):
+    fileName = destPath.name
+    if destPath.exists():
+        deleteFileChunks(fileName, organisation)
+
+    tmpPath.replace(destPath)
+    processFile(destPath, organisation)
+
+
+def handleFileUploadAsync(tmpPath: Path, destPath: Path, organisation: str):
+    thread = threading.Thread(
+        target=handleFileUpload,
+        args=(tmpPath, destPath, organisation),
+        daemon=True,
+    )
     thread.start()
     return thread

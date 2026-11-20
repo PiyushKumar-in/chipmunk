@@ -1,4 +1,5 @@
 import os
+import time
 import ollama
 
 try:
@@ -59,8 +60,9 @@ def generateAnswerFromContext(prompt: str, contextText: str) -> str:
         "You are an assistant answering questions strictly based on the provided context sections. "
         "Do not assume or extrapolate anything not mentioned. "
         "Answer the user question accurately and concisely."
+        "If you cannot answer the question strictly based on the context, output 'Not Covered.'."
     )
-    ragPrompt = f"Context sections:\n{contextText}\n\nUser Question: {prompt}\n\nAnswer:"
+    ragPrompt = f"Context sections:\n```{contextText}```\n\nUser Question: ```{prompt}```\n\nAnswer:"
     res = ollamaClient.generate(
         model=OLLAMA_MODEL,
         system=systemPrompt,
@@ -70,10 +72,17 @@ def generateAnswerFromContext(prompt: str, contextText: str) -> str:
     return res.response
 
 
-def executeRag(prompt: str, organisation: str) -> dict:
-    pseudoAnswer = generatePseudoAnswer(prompt)
-    searchQuery = f"{prompt}\n{pseudoAnswer}"
+def executeRag(prompt: str, organisation: str, useHyde: bool = False) -> dict:
+    t0 = time.time()
+    if useHyde:
+        pseudoAnswer = generatePseudoAnswer(prompt)
+        searchQuery = f"{prompt}\n{pseudoAnswer}"
+    else:
+        searchQuery = prompt
+    t1 = time.time()
+    
     results = querySections(searchQuery, organisation)
+    t2 = time.time()
 
     metadatas = results.get("metadatas", [])
     distances = results.get("distances", [])
@@ -94,5 +103,17 @@ def executeRag(prompt: str, organisation: str) -> dict:
         for meta, doc in zip(metadatas, documents)
     )
 
+    t3 = time.time()
     answer = generateAnswerFromContext(prompt, contextText)
-    return {"citations": citations, "response": answer}
+    t4 = time.time()
+
+    return {
+        "citations": citations,
+        "response": answer,
+        "timeMetrics": {
+            "pseudoAnswerTime": round(t1 - t0, 3),
+            "queryingTime": round(t2 - t1, 3),
+            "mainAnswerTime": round(t4 - t3, 3),
+            "totalTime": round(t4 - t0, 3),
+        },
+    }

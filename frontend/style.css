@@ -275,6 +275,59 @@ input[type="file"] {
   color: #475569;
 }
 
+/* HyDE Toggle Switch */
+.toggle-switch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.toggle-switch-label input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 32px;
+  height: 18px;
+  background-color: #cbd5e1;
+  border-radius: 18px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch-label input:checked + .toggle-slider {
+  background-color: #2563eb;
+}
+
+.toggle-switch-label input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+}
+
+.toggle-text {
+  font-size: 0.82rem;
+}
+
 .chat-main {
   flex: 1;
   overflow-y: auto;
@@ -348,6 +401,36 @@ input[type="file"] {
 
 .collapsible-json summary:hover {
   color: #1d4ed8;
+}
+
+.collapsible-metrics {
+  margin-top: 10px;
+}
+
+.metrics-content {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #ffffff;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.86rem;
+  color: #475569;
+  padding: 3px 0;
+}
+
+.metric-row.total {
+  border-top: 1px dashed #cbd5e1;
+  margin-top: 4px;
+  padding-top: 6px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .json-preview {
