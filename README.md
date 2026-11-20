@@ -2,6 +2,9 @@
 
 A secure, multi-tenant Retrieval-Augmented Generation (RAG) backend for querying organizational policy documents. Built with FastAPI, ChromaDB, ONNX embeddings, and Ollama (`gemma4:12b`).
 
+## Product Demo
+https://github.com/user-attachments/assets/39ae1c1a-0629-4a9b-b483-3d452e6fef54
+
 ---
 
 ## Table of Contents
