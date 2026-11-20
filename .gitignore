@@ -1,2 +1,6 @@
 .venv
 .venv/*
+
+backend/__pycache__
+database/*
+~database/.gitadd
