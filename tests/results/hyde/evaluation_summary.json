@@ -1,46 +1,46 @@
 {
   "aethertech_v1": {
-    "count": 1,
-    "avgTime": 9.096,
-    "p95Time": 9.096,
-    "rouge1": 0.7442,
-    "rouge2": 0.7317,
-    "rougeL": 0.7442,
-    "bertScoreP": 0.9896,
-    "bertScoreR": 0.897,
-    "bertScoreF1": 0.941
+    "count": 50,
+    "avgTime": 10.133,
+    "p95Time": 13.869,
+    "rouge1": 0.5037,
+    "rouge2": 0.4277,
+    "rougeL": 0.4833,
+    "bertScoreP": 0.9399,
+    "bertScoreR": 0.8697,
+    "bertScoreF1": 0.9031
   },
   "nexacore_v1": {
-    "count": 1,
-    "avgTime": 11.287,
-    "p95Time": 11.287,
-    "rouge1": 0.7164,
-    "rouge2": 0.7077,
-    "rougeL": 0.7164,
-    "bertScoreP": 0.9552,
-    "bertScoreR": 0.911,
-    "bertScoreF1": 0.9325
+    "count": 50,
+    "avgTime": 9.391,
+    "p95Time": 12.563,
+    "rouge1": 0.4857,
+    "rouge2": 0.4083,
+    "rougeL": 0.4496,
+    "bertScoreP": 0.9381,
+    "bertScoreR": 0.8605,
+    "bertScoreF1": 0.8973
   },
   "vanguard_v1": {
-    "count": 1,
-    "avgTime": 8.217,
-    "p95Time": 8.217,
-    "rouge1": 0.7907,
-    "rouge2": 0.7805,
-    "rougeL": 0.7907,
-    "bertScoreP": 0.9898,
-    "bertScoreR": 0.9035,
-    "bertScoreF1": 0.9447
+    "count": 50,
+    "avgTime": 9.08,
+    "p95Time": 11.822,
+    "rouge1": 0.5024,
+    "rouge2": 0.424,
+    "rougeL": 0.475,
+    "bertScoreP": 0.942,
+    "bertScoreR": 0.8679,
+    "bertScoreF1": 0.9031
   },
   "aethertech_v2": {
-    "count": 1,
-    "avgTime": 9.375,
-    "p95Time": 9.375,
-    "rouge1": 0.8,
-    "rouge2": 0.7907,
-    "rougeL": 0.8,
-    "bertScoreP": 0.9932,
-    "bertScoreR": 0.9099,
-    "bertScoreF1": 0.9498
+    "count": 50,
+    "avgTime": 9.499,
+    "p95Time": 12.263,
+    "rouge1": 0.4767,
+    "rouge2": 0.3596,
+    "rougeL": 0.4393,
+    "bertScoreP": 0.9326,
+    "bertScoreR": 0.8601,
+    "bertScoreF1": 0.8946
   }
 }
