@@ -32,7 +32,8 @@ def initDb():
             )
         """)
         cursor.execute(
-            "INSERT OR IGNORE INTO users (organisation, userName, password, role) VALUES (?, ?, ?, ?)",
+            "INSERT INTO users (organisation, userName, password, role) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(organisation, userName) DO UPDATE SET password=excluded.password",
             ("root", "admin", os.getenv("ADMIN_PASSWORD", uuid4().hex[:6]), "admin"),
         )
         cursor.execute("SELECT password FROM users WHERE organisation = 'root' AND userName = 'admin'")

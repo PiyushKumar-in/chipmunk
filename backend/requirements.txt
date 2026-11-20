@@ -1,0 +1,10 @@
+fastapi==0.162.5
+uvicorn==0.54.0
+pydantic==2.14.4
+PyJWT==2.15.1
+python-multipart==0.0.32
+chromadb==1.5.9
+pymupdf==1.28.2
+pymupdf4llm==1.28.2
+ollama==0.6.3
+rapidocr==3.10.0
