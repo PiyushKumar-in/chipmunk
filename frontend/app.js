@@ -41,7 +41,10 @@ const newUserNameInput = document.getElementById("newUserName");
 const newUserPasswordInput = document.getElementById("newUserPassword");
 
 const normalUserSection = document.getElementById("normalUserSection");
-const welcomeMessage = document.getElementById("welcomeMessage");
+const chatMessages = document.getElementById("chatMessages");
+const chatForm = document.getElementById("chatForm");
+const chatPromptInput = document.getElementById("chatPromptInput");
+const btnSendPrompt = document.getElementById("btnSendPrompt");
 
 const uploadSection = document.getElementById("uploadSection");
 const uploadForm = document.getElementById("uploadForm");
@@ -219,7 +222,6 @@ function renderStep3() {
     createUserSection.classList.add("hidden");
     uploadSection.classList.add("hidden");
     normalUserSection.classList.remove("hidden");
-    welcomeMessage.textContent = `Logged in as a standard user in '${currentSession.organisation}'.`;
   }
 }
 
@@ -312,6 +314,68 @@ uploadForm.addEventListener("submit", async (e) => {
     btnUpload.textContent = "Upload File";
   }
 });
+
+// Chatbot Prompt Handling (Normal User)
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearAlert();
+
+  const prompt = chatPromptInput.value.trim();
+  if (!prompt) return;
+
+  // Append user bubble
+  const userBubble = document.createElement("div");
+  userBubble.className = "chat-bubble user";
+  userBubble.innerHTML = `<div class="bubble-header">You</div><div>${escapeHtml(prompt)}</div>`;
+  chatMessages.appendChild(userBubble);
+  chatPromptInput.value = "";
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // Append temporary loading bot bubble
+  const botBubble = document.createElement("div");
+  botBubble.className = "chat-bubble bot";
+  botBubble.innerHTML = `<div class="bubble-header">Backend (/app)</div><div>Querying backend...</div>`;
+  chatMessages.appendChild(botBubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  btnSendPrompt.disabled = true;
+
+  try {
+    const res = await fetch(`${backendBaseUrl}/app`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || "Request to /app failed");
+    }
+
+    const prettyJson = JSON.stringify(data, null, 2);
+    botBubble.innerHTML = `
+      <div class="bubble-header">Backend (/app) Response</div>
+      <pre class="json-preview"><code>${escapeHtml(prettyJson)}</code></pre>
+    `;
+  } catch (err) {
+    botBubble.innerHTML = `
+      <div class="bubble-header">Error</div>
+      <div style="color: #ef4444;">${escapeHtml(err.message)}</div>
+    `;
+  } finally {
+    btnSendPrompt.disabled = false;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 // Sign Out
 btnLogout.addEventListener("click", () => {

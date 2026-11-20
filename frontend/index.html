@@ -112,12 +112,20 @@
           </form>
         </div>
 
-        <!-- Normal User Welcome Panel (Visible only to Normal User) -->
+        <!-- Normal User Chatbot Panel (Visible only to Normal User) -->
         <div id="normalUserSection" class="hidden">
-          <div class="welcome-box">
-            <h2>Welcome!</h2>
-            <p id="welcomeMessage" class="subtext"></p>
-            <p class="hint">Standard users do not have permissions to create users.</p>
+          <div class="chat-wrapper">
+            <div id="chatMessages" class="chat-messages">
+              <div class="chat-bubble bot">
+                <div class="bubble-header">System</div>
+                <div class="bubble-body">Hello! Ask anything about your organisation's documents. The response JSON will be displayed below.</div>
+              </div>
+            </div>
+
+            <form id="chatForm" class="chat-input-form">
+              <textarea id="chatPromptInput" rows="2" placeholder="Type your prompt here..." required></textarea>
+              <button type="submit" id="btnSendPrompt" class="btn primary">Send</button>
+            </form>
           </div>
         </div>
       </section>

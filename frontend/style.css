@@ -17,7 +17,7 @@ body {
 
 .container {
   width: 100%;
-  max-width: 540px;
+  max-width: 680px;
 }
 
 .card {
@@ -220,6 +220,96 @@ input[type="password"]:focus {
   font-size: 1.25rem;
   color: #0f172a;
   margin-bottom: 8px;
+}
+
+/* Chatbot Styles */
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-messages {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.chat-bubble {
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.chat-bubble.user {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  align-self: flex-end;
+  max-width: 85%;
+}
+
+.chat-bubble.bot {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  align-self: flex-start;
+  max-width: 95%;
+  width: 100%;
+}
+
+.bubble-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.json-preview {
+  background: #1e293b;
+  color: #38bdf8;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 6px;
+}
+
+.chat-input-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.chat-input-form textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  resize: vertical;
+  min-height: 48px;
+  max-height: 150px;
+  font-family: inherit;
+}
+
+.chat-input-form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.chat-input-form .btn {
+  height: 48px;
 }
 
 .divider {

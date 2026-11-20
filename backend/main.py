@@ -7,9 +7,11 @@ from pydantic import BaseModel
 try:
     from backend.auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
     from backend.processing import processFileAsync
+    from backend.rag import querySections
 except ModuleNotFoundError:
     from auth import databaseDir, dbPath, LoginRequest, User, createToken, getCurrentUser
     from processing import processFileAsync
+    from rag import querySections
 
 
 app = FastAPI()
@@ -26,6 +28,10 @@ class CreateUserRequest(BaseModel):
     userName: str
     password: str
     organisation: str | None = None
+
+
+class AppRequest(BaseModel):
+    prompt: str
 
 
 @app.get("/")
@@ -108,6 +114,15 @@ def uploadFile(
         "fileName": fileName,
         "organisation": currentUser.organisation,
     }
+
+
+@app.post("/app")
+def appEndpoint(
+    appData: AppRequest,
+    currentUser: Annotated[User, Depends(getCurrentUser)],
+):
+    citations = querySections(appData.prompt, currentUser.organisation)
+    return {"citations": citations}
 
 
 if __name__ == "__main__":
