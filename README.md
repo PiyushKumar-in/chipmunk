@@ -34,7 +34,10 @@ https://github.com/user-attachments/assets/39ae1c1a-0629-4a9b-b483-3d452e6fef54
 - **Granular Citations**: Formatted document citations referencing exact file, page number, and paragraph number.
 - **Optional HyDE**: Hypothetical Document Embeddings toggle for enhanced query semantic retrieval.
 - **Per-Step Latency Profiling**: Returns time spent on pseudo-answer generation, vector querying, and LLM synthesis.
-
+- **Policy Updation**: Company policies & same documents can be updated on the go.
+- **Authentication**: JWT based User Authentication (1 hour time window)
+- **Ollama (OpenAI compatible)**: Uses ollama/python, OpenAI compatible API
+- **Metrics**: Includes Bert/Rouge Scores for each pipline (Baseline & HyDE).
 ---
 
 ## System & Model Architecture
