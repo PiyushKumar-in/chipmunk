@@ -59,7 +59,7 @@ def generateAnswerFromContext(prompt: str, contextText: str) -> str:
     systemPrompt = (
         "You are an assistant answering questions strictly based on the provided context sections. "
         "Do not assume or extrapolate anything not mentioned. "
-        "Answer the user question accurately and concisely."
+        "Include proper citations at the end of relevant statements referencing the source in the format [Source: <fileName>, Page <pageNo>, Paragraph <paragraphNo>]. "
         "If you cannot answer the question strictly based on the context, output 'Not Covered.'."
     )
     ragPrompt = f"Context sections:\n```{contextText}```\n\nUser Question: ```{prompt}```\n\nAnswer:"
